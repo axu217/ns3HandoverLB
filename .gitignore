@@ -1,0 +1,16 @@
+/utils.pyc
+/.lock-waf_linux2_build
+/wutils.pyc
+/waf-tools/boost.pyc
+/waf-tools/cflags.pyc
+/waf-tools/clang_compilation_database.pyc
+/waf-tools/command.pyc
+/waf-tools/misc.pyc
+/waf-tools/relocation.pyc
+/waf-tools/shellcmd.pyc
+/build
+.waf-*/
+.lock-waf_linux_build
+.waf3-2.0.9-*/
+__pycache__/
+waf-tools/__pycache__/

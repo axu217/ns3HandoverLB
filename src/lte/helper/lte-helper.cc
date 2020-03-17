@@ -499,6 +499,7 @@ LteHelper::InstallUeDevice (NodeContainer c)
   return devices;
 }
 
+static uint8_t experimentalId = 0;
 
 Ptr<NetDevice>
 LteHelper::InstallSingleEnbDevice (Ptr<Node> n)
@@ -580,6 +581,9 @@ LteHelper::InstallSingleEnbDevice (Ptr<Node> n)
       Ptr<LteEnbMac> mac = CreateObject<LteEnbMac> ();
       Ptr<FfMacScheduler> sched = m_schedulerFactory.Create<FfMacScheduler> ();
       Ptr<LteFfrAlgorithm> ffrAlgorithm = m_ffrAlgorithmFactory.Create<LteFfrAlgorithm> ();
+
+      mac->SetExperimentalId(experimentalId);
+      experimentalId++;
       it->second->SetMac (mac);
       it->second->SetFfMacScheduler (sched);
       it->second->SetFfrAlgorithm (ffrAlgorithm);
@@ -648,6 +652,7 @@ LteHelper::InstallSingleEnbDevice (Ptr<Node> n)
       rrc->SetLteEnbCmacSapProvider (it->second->GetMac ()->GetLteEnbCmacSapProvider (),it->first );
       it->second->GetMac ()->SetLteEnbCmacSapUser (rrc->GetLteEnbCmacSapUser (it->first));
 
+        NS_LOG_UNCOND("Heckin weird loop iteration: setting carrier id to: " << it->first << ".");
       it->second->GetPhy ()->SetComponentCarrierId (it->first);
       it->second->GetMac ()->SetComponentCarrierId (it->first);
       //FFR SAP

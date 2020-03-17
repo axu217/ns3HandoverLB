@@ -332,6 +332,8 @@ public:
    */
   virtual void SchedUlConfigInd (const struct SchedUlConfigIndParameters& params) = 0;
 
+  virtual uint8_t getExperimentalId() = 0;
+
 private:
 };
 

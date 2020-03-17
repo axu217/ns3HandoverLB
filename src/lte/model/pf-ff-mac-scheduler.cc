@@ -25,6 +25,7 @@
 #include <cfloat>
 #include <ns3/boolean.h>
 #include <ns3/lte-amc.h>
+#include <ns3/lte-enb-mac.h>
 #include <ns3/lte-vendor-specific-parameters.h>
 #include <ns3/pf-ff-mac-scheduler.h>
 #include <ns3/simulator.h>
@@ -399,8 +400,6 @@ void PfFfMacScheduler::DoSchedDlTriggerReq(
         }
     }
 
-    NS_LOG_LOGIC("Allocated RBG: " << rbgAllocatedNum << " Total RBG: " << rbgNum);
-
     FfMacSchedSapUser::SchedDlConfigIndParameters ret;
 
     //   update UL HARQ proc id
@@ -477,9 +476,9 @@ void PfFfMacScheduler::DoSchedDlTriggerReq(
         newRar.m_grant.m_tpc = 0;
         newRar.m_grant.m_cqiRequest = false;
         newRar.m_grant.m_ulDelay = false;
-        NS_LOG_INFO(this << " UL grant allocated to RNTI " << (*itRach).m_rnti << " rbStart " << rbStart
-                         << " rbLen " << rbLen << " MCS " << m_ulGrantMcs << " tbSize "
-                         << newRar.m_grant.m_tbSize);
+        NS_LOG_UNCOND(this << " UL grant allocated to RNTI " << (*itRach).m_rnti << " rbStart " << rbStart
+                           << " rbLen " << rbLen << " MCS " << m_ulGrantMcs << " tbSize "
+                           << newRar.m_grant.m_tbSize);
         for (uint16_t i = rbStart; i < rbStart + rbLen; i++) {
             m_rachAllocationMap.at(i) = (*itRach).m_rnti;
         }
@@ -543,6 +542,7 @@ void PfFfMacScheduler::DoSchedDlTriggerReq(
         // Ignore HARQ feedback
         m_dlInfoListBuffered.clear();
     }
+
     std::vector<struct DlInfoListElement_s> dlInfoListUntxed;
     for (uint16_t i = 0; i < m_dlInfoListBuffered.size(); i++) {
         std::set<uint16_t>::iterator itRnti = rntiAllocated.find(m_dlInfoListBuffered.at(i).m_rnti);
@@ -756,14 +756,14 @@ void PfFfMacScheduler::DoSchedDlTriggerReq(
     }
 
     for (int i = 0; i < rbgNum; i++) {
-        NS_LOG_INFO(this << " ALLOCATION for RBG " << i << " of " << rbgNum);
         if (rbgMap.at(i) == false) {
             std::map<uint16_t, pfsFlowPerf_t>::iterator it;
             std::map<uint16_t, pfsFlowPerf_t>::iterator itMax = m_flowStatsDl.end();
             double rcqiMax = 0.0;
             for (it = m_flowStatsDl.begin(); it != m_flowStatsDl.end(); it++) {
-                if ((m_ffrSapProvider->IsDlRbgAvailableForUe(i, (*it).first)) == false)
+                if ((m_ffrSapProvider->IsDlRbgAvailableForUe(i, (*it).first)) == false) {
                     continue;
+                }
 
                 std::set<uint16_t>::iterator itRnti = rntiAllocated.find((*it).first);
                 if ((itRnti != rntiAllocated.end()) || (!HarqProcessAvailability((*it).first))) {
@@ -830,7 +830,6 @@ void PfFfMacScheduler::DoSchedDlTriggerReq(
 
             if (itMax == m_flowStatsDl.end()) {
                 // no UE available for this RB
-                NS_LOG_INFO(this << " any UE found");
             } else {
                 rbgMap.at(i) = true;
                 std::map<uint16_t, std::vector<uint16_t>>::iterator itMap;
@@ -843,8 +842,8 @@ void PfFfMacScheduler::DoSchedDlTriggerReq(
                 } else {
                     (*itMap).second.push_back(i);
                 }
-                NS_LOG_INFO(this << " UE assigned " << (*itMax).first);
             }
+        } else {
         } // end for RBG free
     }     // end for RBGs
 
@@ -854,6 +853,7 @@ void PfFfMacScheduler::DoSchedDlTriggerReq(
         (*itStats).second.lastTtiBytesTrasmitted = 0;
     }
 
+    uint16_t allocatedRbSum = 0;
     // generate the transmission opportunities by grouping the RBGs of the same RNTI and
     // creating the correspondent DCIs
     std::map<uint16_t, std::vector<uint16_t>>::iterator itMap = allocationMap.begin();
@@ -868,6 +868,7 @@ void PfFfMacScheduler::DoSchedDlTriggerReq(
 
         uint16_t lcActives = LcActivePerFlow((*itMap).first);
         NS_LOG_INFO(this << "Allocate user " << newEl.m_rnti << " rbg " << lcActives);
+        allocatedRbSum = allocatedRbSum + lcActives;
         if (lcActives == 0) {
             // Set to max value, to avoid divide by 0 below
             lcActives = (uint16_t) 65535; // UINT16_MAX;
@@ -1014,7 +1015,6 @@ void PfFfMacScheduler::DoSchedDlTriggerReq(
         itMap++;
     }                               // end while allocation
     ret.m_nrOfPdcchOfdmSymbols = 1; /// \todo check correct value according the DCIs txed
-
     // update UEs stats
     NS_LOG_INFO(this << " Update UEs statistics");
     for (itStats = m_flowStatsDl.begin(); itStats != m_flowStatsDl.end(); itStats++) {
@@ -1117,10 +1117,29 @@ double PfFfMacScheduler::EstimateUlSinr(uint16_t rnti, uint16_t rb) {
     }
 }
 
+static int tCounter = 0;
 void PfFfMacScheduler::DoSchedUlTriggerReq(
     const struct FfMacSchedSapProvider::SchedUlTriggerReqParameters &params) {
     NS_LOG_FUNCTION(this << " UL - Frame no. " << (params.m_sfnSf >> 4) << " subframe no. "
                          << (0xF & params.m_sfnSf) << " size " << params.m_ulInfoList.size());
+
+    // NECESSARY LOAD VARIABLES: TODO ZHE
+
+    // m_schedSapUser: EnbMacMemberFfMacSchedSapUser instance. Can pull mac eNodeB id?
+
+    // m_componentCarrierId
+
+    // EnbMacMemberFfMacSchedSapUser *tempStop = m_schedSapUser;
+
+    if (tCounter > 100) {
+        uint8_t carrierId = m_schedSapUser->getExperimentalId();
+        char temp[128] = {0};
+        sprintf(temp, "DoSchedUlTriggerReq - experimental id: [%u]", carrierId);
+        NS_LOG_UNCOND(temp);
+        tCounter = 0;
+    } else {
+        tCounter++;
+    }
 
     RefreshUlCqiMaps();
     m_ffrSapProvider->ReportUlCqiInfo(m_ueCqi);
@@ -1269,7 +1288,9 @@ void PfFfMacScheduler::DoSchedUlTriggerReq(
         it = m_ceBsrRxed.begin();
         m_nextRntiUl = (*it).first;
     }
+    uint16_t numUe = 0;
     do {
+        numUe++;
         std::set<uint16_t>::iterator itRnti = rntiAllocated.find((*it).first);
         if ((itRnti != rntiAllocated.end()) || ((*it).second == 0)) {
             // UE already allocated for UL-HARQ -> skip it
@@ -1427,10 +1448,10 @@ void PfFfMacScheduler::DoSchedUlTriggerReq(
             (*itStat).second.at(harqId) = 0;
         }
 
-        NS_LOG_INFO(this << " UE Allocation RNTI " << (*it).first << " startPRB "
-                         << (uint32_t) uldci.m_rbStart << " nPRB " << (uint32_t) uldci.m_rbLen << " CQI "
-                         << cqi << " MCS " << (uint32_t) uldci.m_mcs << " TBsize " << uldci.m_tbSize
-                         << " RbAlloc " << rbAllocated << " harqId " << (uint16_t) harqId);
+        NS_LOG_UNCOND(this << " UE Allocation RNTI " << (*it).first << " startPRB "
+                           << (uint32_t) uldci.m_rbStart << " nPRB " << (uint32_t) uldci.m_rbLen << " CQI "
+                           << cqi << " MCS " << (uint32_t) uldci.m_mcs << " TBsize " << uldci.m_tbSize
+                           << " RbAlloc " << rbAllocated << " harqId " << (uint16_t) harqId);
 
         // update TTI  UE stats
         itStats = m_flowStatsUl.find((*it).first);
@@ -1451,6 +1472,8 @@ void PfFfMacScheduler::DoSchedUlTriggerReq(
             break;
         }
     } while (((*it).first != m_nextRntiUl) && (rbPerFlow != 0));
+
+    NS_LOG_UNCOND("Uplink RbAlloc: " << rbAllocated << ". UE number " << numUe);
 
     // Update global UE stats
     // update UEs stats

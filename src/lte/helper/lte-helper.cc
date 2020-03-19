@@ -578,6 +578,7 @@ LteHelper::InstallSingleEnbDevice (Ptr<Node> n)
       ulPhy->SetAntenna (antenna);
 
       Ptr<LteEnbMac> mac = CreateObject<LteEnbMac> ();
+      mac->SetCellId(it->second->GetCellId());
       Ptr<FfMacScheduler> sched = m_schedulerFactory.Create<FfMacScheduler> ();
       Ptr<LteFfrAlgorithm> ffrAlgorithm = m_ffrAlgorithmFactory.Create<LteFfrAlgorithm> ();
       it->second->SetMac (mac);

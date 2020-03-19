@@ -157,6 +157,7 @@ public:
 
   virtual void SchedDlConfigInd (const struct SchedDlConfigIndParameters& params);
   virtual void SchedUlConfigInd (const struct SchedUlConfigIndParameters& params);
+  virtual uint16_t getCellId();
 private:
   LteEnbMac* m_mac; ///< the MAC
 };
@@ -180,6 +181,11 @@ void
 EnbMacMemberFfMacSchedSapUser::SchedUlConfigInd (const struct SchedUlConfigIndParameters& params)
 {
   m_mac->DoSchedUlConfigInd (params);
+}
+
+uint16_t
+EnbMacMemberFfMacSchedSapUser::getCellId() {
+    return m_mac->m_cellId;
 }
 
 
@@ -408,6 +414,11 @@ LteEnbMac::DoDispose ()
   delete m_cschedSapUser;
   delete m_enbPhySapUser;
   delete m_ccmMacSapProvider;
+}
+
+void
+LteEnbMac::SetCellId(uint16_t id) { 
+  m_cellId = id; 
 }
 
 void

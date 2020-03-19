@@ -331,6 +331,7 @@ public:
    * \param params SchedUlConfigIndParameters
    */
   virtual void SchedUlConfigInd (const struct SchedUlConfigIndParameters& params) = 0;
+  virtual uint16_t getCellId() = 0;
 
 private:
 };

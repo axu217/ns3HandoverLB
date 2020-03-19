@@ -78,8 +78,6 @@ public:
   virtual ~LteEnbMac (void);
   virtual void DoDispose (void);
 
-  void SetExperimentalId (uint8_t id);
-
   /**
    * \brief Set the component carrier ID
    * \param index the component carrier ID
@@ -456,8 +454,6 @@ private:
 
   /// component carrier Id used to address sap
   uint8_t m_componentCarrierId;
-
-  uint8_t m_experimentalId;
  
 };
 

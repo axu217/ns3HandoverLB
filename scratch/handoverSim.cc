@@ -1,183 +1,154 @@
-#include "handoverSim.h"
 #include "ns3/applications-module.h"
-#include "ns3/config-store.h"
 #include "ns3/core-module.h"
-#include "ns3/epc-helper.h"
+#include "ns3/csma-module.h"
+#include "ns3/flow-monitor-helper.h"
+#include "ns3/flow-monitor.h"
 #include "ns3/internet-module.h"
-#include "ns3/ipv4-global-routing-helper.h"
 #include "ns3/lte-helper.h"
-#include "ns3/lte-module.h"
 #include "ns3/mobility-module.h"
-#include "ns3/network-module.h"
+#include "ns3/point-to-point-epc-helper.h"
 #include "ns3/point-to-point-helper.h"
+#include "ns3/position-allocator.h"
 #include <fstream>
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE("EchoServer");
-
-// int getLoad(Ptr<Node> enb) { return 0; }
-
-// void optimize(NodeContainer enbNodes) {
-
-//     for (uint32_t u = 0; u < enbNodes.GetN(); ++u) {
-//         Ptr<Node> enb = enbNodes.Get(u);
-//         int load = getLoad(enb)
-//     }
-// }
+NS_LOG_COMPONENT_DEFINE("LTEUdpEchoExample");
 
 int main(int argc, char *argv[]) {
+    NS_LOG_INFO("Create nodes.");
 
-    LogComponentEnable("LteHelper", LOG_LEVEL_ALL);
+    // remote host node
+    NodeContainer remoteNodeContainer;
+    remoteNodeContainer.Create(2);
 
-    uint16_t numberOfNodes = 5;
-    double simTime = 1.1;
-    double distance = 60.0;
-    double interPacketInterval = 100;
-    bool useCa = false;
-
-    // Command line arguments
-    CommandLine cmd;
-    cmd.AddValue("numberOfNodes", "Number of eNodeBs + UE pairs", numberOfNodes);
-    cmd.AddValue("simTime", "Total duration of the simulation [s])", simTime);
-    cmd.AddValue("distance", "Distance between eNBs [m]", distance);
-    cmd.AddValue("interPacketInterval", "Inter packet interval [ms])", interPacketInterval);
-    cmd.AddValue("useCa", "Whether to use carrier aggregation.", useCa);
-    cmd.Parse(argc, argv);
-
-    if (useCa) {
-        Config::SetDefault("ns3::LteHelper::UseCa", BooleanValue(useCa));
-        Config::SetDefault("ns3::LteHelper::NumberOfComponentCarriers", UintegerValue(2));
-        Config::SetDefault("ns3::LteHelper::EnbComponentCarrierManager",
-                           StringValue("ns3::RrComponentCarrierManager"));
-    }
-
+    // create lte helper
     Ptr<LteHelper> lteHelper = CreateObject<LteHelper>();
+
+    // create epc helper
     Ptr<PointToPointEpcHelper> epcHelper = CreateObject<PointToPointEpcHelper>();
     lteHelper->SetEpcHelper(epcHelper);
 
-    ConfigStore inputConfig;
-    inputConfig.ConfigureDefaults();
+    // impl path loss model
+    lteHelper->SetAttribute("PathlossModel", StringValue("ns3::FriisPropagationLossModel"));
 
-    // parse again so you can override default values from the command line
-    cmd.Parse(argc, argv);
-
+    // Get P-GW from EPC Helper
     Ptr<Node> pgw = epcHelper->GetPgwNode();
 
-    // Create a single RemoteHost
-    NodeContainer remoteHostContainer;
-    remoteHostContainer.Create(1);
-    Ptr<Node> remoteHost = remoteHostContainer.Get(0);
     InternetStackHelper internet;
-    internet.Install(remoteHostContainer);
+    internet.Install(remoteNodeContainer);
 
-    // Create the Internet
+    NS_LOG_INFO("Create channels.");
+
     PointToPointHelper p2ph;
-    p2ph.SetDeviceAttribute("DataRate", DataRateValue(DataRate("100Gb/s")));
-    p2ph.SetDeviceAttribute("Mtu", UintegerValue(1500));
-    p2ph.SetChannelAttribute("Delay", TimeValue(Seconds(0.010)));
-    NetDeviceContainer internetDevices = p2ph.Install(pgw, remoteHost);
+    p2ph.SetDeviceAttribute("DataRate", DataRateValue(DataRate("1Gb/s")));
+    p2ph.SetDeviceAttribute("Mtu",
+                            UintegerValue(30000)); // jumbo frames here as well
+    // p2ph.SetChannelAttribute ("Delay", TimeValue (Seconds (0.010)));
+
+    NetDeviceContainer internetDevices =
+        p2ph.Install(pgw, remoteNodeContainer.Get(0)); // [P-GW] ------- [internet] ------ [remote host node]
     Ipv4AddressHelper ipv4h;
     ipv4h.SetBase("1.0.0.0", "255.0.0.0");
     Ipv4InterfaceContainer internetIpIfaces = ipv4h.Assign(internetDevices);
-    // interface 0 is localhost, 1 is the p2p device
-    Ipv4Address remoteHostAddr = internetIpIfaces.GetAddress(1);
+
+    Ipv4Address remoteHostAddr;
+
+    remoteHostAddr = internetIpIfaces.GetAddress(1); // remote host ip adr
 
     Ipv4StaticRoutingHelper ipv4RoutingHelper;
     Ptr<Ipv4StaticRouting> remoteHostStaticRouting =
-        ipv4RoutingHelper.GetStaticRouting(remoteHost->GetObject<Ipv4>());
-    remoteHostStaticRouting->AddNetworkRouteTo(Ipv4Address("7.0.0.0"), Ipv4Mask("255.0.0.0"), 1);
+        ipv4RoutingHelper.GetStaticRouting(remoteNodeContainer.Get(1)->GetObject<Ipv4>());
 
-    NodeContainer ueNodes;
-    NodeContainer enbNodes;
-    enbNodes.Create(numberOfNodes);
-    ueNodes.Create(numberOfNodes);
+    // hardcoded UE addresses for now
+    remoteHostStaticRouting->AddNetworkRouteTo(Ipv4Address("7.0.0.0"), Ipv4Mask("255.255.255.0"), 1);
 
-    // Install Mobility Model
-    Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator>();
-    for (uint16_t i = 0; i < numberOfNodes; i++) {
-        positionAlloc->Add(Vector(distance * i, 0, 0));
-    }
-    MobilityHelper mobility;
-    mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
-    mobility.SetPositionAllocator(positionAlloc);
-    mobility.Install(enbNodes);
-    mobility.Install(ueNodes);
+    // create enb
 
-    // Install LTE Devices to the nodes
-    NetDeviceContainer enbLteDevs = lteHelper->InstallEnbDevice(enbNodes);
-    NetDeviceContainer ueLteDevs = lteHelper->InstallUeDevice(ueNodes);
+    NodeContainer enbs;
+    enbs.Create(1);
 
-    // Install the IP stack on the UEs
-    internet.Install(ueNodes);
-    Ipv4InterfaceContainer ueIpIface;
-    ueIpIface = epcHelper->AssignUeIpv4Address(NetDeviceContainer(ueLteDevs));
-    // Assign IP address to UEs, and install applications
-    for (uint32_t u = 0; u < ueNodes.GetN(); ++u) {
-        Ptr<Node> ueNode = ueNodes.Get(u);
-        // Set the default gateway for the UE
-        Ptr<Ipv4StaticRouting> ueStaticRouting =
-            ipv4RoutingHelper.GetStaticRouting(ueNode->GetObject<Ipv4>());
-        ueStaticRouting->SetDefaultRoute(epcHelper->GetUeDefaultGatewayAddress(), 1);
-    }
+    Ptr<ListPositionAllocator> enbPositionAlloc = CreateObject<ListPositionAllocator>();
+    enbPositionAlloc->Add(Vector(0.0, 0.0, 0.0));
+    enbPositionAlloc->Add(Vector(100, 0.0, 0.0));
 
-    // Attach one UE per eNodeB
-    for (uint16_t i = 0; i < numberOfNodes; i++) {
-        lteHelper->Attach(ueLteDevs.Get(i), enbLteDevs.Get(i));
-        // side effect: the default EPS bearer will be activated
-    }
+    MobilityHelper enbMobility;
+    enbMobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+    enbMobility.SetPositionAllocator(enbPositionAlloc);
 
-    // Install and start applications on UEs and remote host
-    uint16_t dlPort = 1234;
-    uint16_t ulPort = 2000;
-    uint16_t otherPort = 3000;
-    ApplicationContainer clientApps;
-    ApplicationContainer serverApps;
-    for (uint32_t u = 0; u < ueNodes.GetN(); ++u) {
-        ++ulPort;
-        ++otherPort;
-        PacketSinkHelper dlPacketSinkHelper("ns3::UdpSocketFactory",
-                                            InetSocketAddress(Ipv4Address::GetAny(), dlPort));
-        PacketSinkHelper ulPacketSinkHelper("ns3::UdpSocketFactory",
-                                            InetSocketAddress(Ipv4Address::GetAny(), ulPort));
-        PacketSinkHelper packetSinkHelper("ns3::UdpSocketFactory",
-                                          InetSocketAddress(Ipv4Address::GetAny(), otherPort));
-        serverApps.Add(dlPacketSinkHelper.Install(ueNodes.Get(u)));
-        serverApps.Add(ulPacketSinkHelper.Install(remoteHost));
-        serverApps.Add(packetSinkHelper.Install(ueNodes.Get(u)));
+    enbMobility.Install(enbs);
+    NetDeviceContainer enbLteDev = lteHelper->InstallEnbDevice(enbs);
 
-        UdpClientHelper dlClient(ueIpIface.GetAddress(u), dlPort);
-        dlClient.SetAttribute("Interval", TimeValue(MilliSeconds(interPacketInterval)));
-        dlClient.SetAttribute("MaxPackets", UintegerValue(1000000));
+    // ues client
+    NodeContainer ues;
+    ues.Create(1);
 
-        UdpClientHelper ulClient(remoteHostAddr, ulPort);
-        ulClient.SetAttribute("Interval", TimeValue(MilliSeconds(interPacketInterval)));
-        ulClient.SetAttribute("MaxPackets", UintegerValue(1000000));
+    MobilityHelper ueMobility;
 
-        UdpClientHelper client(ueIpIface.GetAddress(u), otherPort);
-        client.SetAttribute("Interval", TimeValue(MilliSeconds(interPacketInterval)));
-        client.SetAttribute("MaxPackets", UintegerValue(1000000));
+    ueMobility.SetPositionAllocator("ns3::UniformDiscPositionAllocator", "X", DoubleValue(0), "Y",
+                                    DoubleValue(0), "rho", DoubleValue(100.0));
+    ueMobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+    ueMobility.Install(ues);
+    NetDeviceContainer ueLteDevs = lteHelper->InstallUeDevice(ues);
 
-        clientApps.Add(dlClient.Install(remoteHost));
-        clientApps.Add(ulClient.Install(ueNodes.Get(u)));
-        if (u + 1 < ueNodes.GetN()) {
-            clientApps.Add(client.Install(ueNodes.Get(u + 1)));
-        } else {
-            clientApps.Add(client.Install(ueNodes.Get(0)));
-        }
-    }
-    serverApps.Start(Seconds(0.01));
-    clientApps.Start(Seconds(0.01));
-    lteHelper->EnableTraces();
-    // Uncomment to enable PCAP tracing
-    // p2ph.EnablePcapAll("lena-epc-first");
+    InternetStackHelper internet2;
+    internet2.Install(ues);
 
-    Simulator::Stop(Seconds(simTime));
+    Ptr<Node> ue = ues.Get(0);
+    Ptr<NetDevice> ueLteDevice = ueLteDevs.Get(0);
+    Ipv4InterfaceContainer ueIpIface = epcHelper->AssignUeIpv4Address(NetDeviceContainer(ueLteDevice));
+
+    // set the default gateway for the UE
+    Ptr<Ipv4StaticRouting> ueStaticRouting = ipv4RoutingHelper.GetStaticRouting(ue->GetObject<Ipv4>());
+    ueStaticRouting->SetDefaultRoute(epcHelper->GetUeDefaultGatewayAddress(), 1);
+
+    // we can now attach the UE, which will also activate the default EPS bearer
+    lteHelper->Attach(ueLteDevice);
+
+    //////// network setting clear;
+
+    // server setting
+
+    uint16_t port = 9; // well-known echo port number
+    UdpEchoServerHelper server(port);
+    ApplicationContainer apps = server.Install(remoteNodeContainer.Get(0));
+    apps.Start(Seconds(1.0));
+    apps.Stop(Seconds(10.0));
+
+    //
+    // Create a UdpEchoClient application to send UDP datagrams from node zero to
+    // node one.
+    //
+
+    uint32_t packetSize = 2048;
+    uint32_t maxPacketCount = 50;
+    Time interPacketInterval = Seconds(0.2);
+    UdpEchoClientHelper client(remoteHostAddr, port);
+    client.SetAttribute("MaxPackets", UintegerValue(maxPacketCount));
+    client.SetAttribute("Interval", TimeValue(interPacketInterval));
+    client.SetAttribute("PacketSize", UintegerValue(packetSize));
+
+    apps = client.Install(ues.Get(0));
+    apps.Start(Seconds(2.0));
+    apps.Stop(Seconds(10.0));
+
+    // client.SetFill (apps.Get(0), 0xff, 1024 * 10);
+
+    // AsciiTraceHelper ascii;
+    // p2ph.EnableAsciiAll (ascii.CreateFileStream ("lte-udp-echo.tr"));
+    // p2ph.EnablePcapAll ("lte-udp-echo", false);
+
+    Ptr<FlowMonitor> flowmon;
+    FlowMonitorHelper flowmonHelper;
+    flowmon = flowmonHelper.InstallAll();
+
+    NS_LOG_INFO("Run Simulation.");
+
+    Simulator::Stop(Seconds(10.0));
     Simulator::Run();
 
-    /*GtkConfigStore config;
-    config.ConfigureAttributes();*/
+    flowmon->SerializeToXmlFile("lte-udp-echo.flowmon", false, false);
 
     Simulator::Destroy();
-    return 0;
+    NS_LOG_INFO("Done.");
 }

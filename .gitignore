@@ -14,5 +14,3 @@
 .waf3-2.0.9-*/
 __pycache__/
 waf-tools/__pycache__/
-.clang-format
-.vscode/

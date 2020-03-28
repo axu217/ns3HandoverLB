@@ -37,6 +37,8 @@
 #include <ns3/lte-pdcp.h>
 #include <ns3/lte-radio-bearer-info.h>
 
+#include <ns3/enb-load.h>
+
 #include <cmath>
 
 namespace ns3 {
@@ -1948,7 +1950,7 @@ LteUeRrc::MeasurementReportTriggering (uint8_t measId)
          */
 
         double mn; // Mn, the measurement result of the neighbouring cell
-        double ofn = measObjectEutra.offsetFreq; // Ofn, the frequency specific offset of the frequency of the
+        double ofn = measObjectEutra.offsetFreq; // Ofn, the frequency specific offset of the neighbour cell
         double ocn = 0.0; // Ocn, the cell specific offset of the neighbour cell
         double mp; // Mp, the measurement result of the PCell
         double ofp = measObjectEutra.offsetFreq; // Ofp, the frequency specific offset of the primary frequency
@@ -2001,6 +2003,9 @@ LteUeRrc::MeasurementReportTriggering (uint8_t measId)
             bool hasTriggered = isMeasIdInReportList
               && (measReportIt->second.cellsTriggeredList.find (cellId)
                   != measReportIt->second.cellsTriggeredList.end ());
+
+            ocn = getLoad(cellId);
+            ocp = getLoad(m_cellId);
 
             // Inequality A3-1 (Entering condition): Mn + Ofn + Ocn - Hys > Mp + Ofp + Ocp + Off
             bool entryCond = mn + ofn + ocn - hys > mp + ofp + ocp + off;

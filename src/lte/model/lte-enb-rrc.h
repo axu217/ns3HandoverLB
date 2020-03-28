@@ -618,7 +618,8 @@ public:
    * \return the object TypeId
    */
   static TypeId GetTypeId (void);
-
+  
+  void getUeMap (void* mapPointer);
   /**
    * Set the X2 SAP this RRC should interact with
    * \param s the X2 SAP Provider to be used by this RRC entity

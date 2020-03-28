@@ -137,6 +137,14 @@ private:
   virtual void DoInitialize (void);
   virtual void DoDispose (void);
 public:
+
+  struct MeasValues
+  {
+    double rsrp; ///< Measured RSRP in dBm.
+    double rsrq; ///< Measured RSRQ in dB.
+    Time timestamp; ///< Not used. \todo Should be removed.
+  };
+  std::map<uint16_t, MeasValues> m_storedMeasValues;
   /**
    * \brief Get the type ID.
    * \return the object TypeId
@@ -988,12 +996,7 @@ private:
   /**
    * \brief Represents a measurement result from a certain cell.
    */
-  struct MeasValues
-  {
-    double rsrp; ///< Measured RSRP in dBm.
-    double rsrq; ///< Measured RSRQ in dB.
-    Time timestamp; ///< Not used. \todo Should be removed.
-  };
+  
 
   /**
    * \brief Internal storage of the latest measurement results from all detected
@@ -1008,7 +1011,7 @@ private:
    * function (LteUeRrc::MeasurementReportTriggering and
    * LteUeRrc::SendMeasurementReport).
    */
-  std::map<uint16_t, MeasValues> m_storedMeasValues;
+  //std::map<uint16_t, MeasValues> m_storedMeasValues;
 
   /**
    * \brief Stored measure values per carrier.

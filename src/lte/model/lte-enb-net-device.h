@@ -56,6 +56,8 @@ class LteEnbComponentCarrierManager;
 class LteEnbNetDevice : public LteNetDevice
 {
 public:
+
+  std::map < uint8_t, Ptr<ComponentCarrierEnb> > m_ccMap; /**< ComponentCarrier map */
   /**
    * \brief Get the type ID.
    * \return the object TypeId
@@ -253,7 +255,7 @@ private:
   uint16_t m_csgId; ///< CSG ID
   bool m_csgIndication; ///< CSG indication
 
-  std::map < uint8_t, Ptr<ComponentCarrierEnb> > m_ccMap; /**< ComponentCarrier map */
+  
   
   Ptr<LteEnbComponentCarrierManager> m_componentCarrierManager; ///< the component carrier manager of this eNb
 

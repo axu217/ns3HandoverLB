@@ -42,9 +42,9 @@ int
 main (int argc, char *argv[])
 {
   //uint16_t numNodePairs = 2;
-  uint16_t numNodePairs = 1;
+  uint16_t numNodePairs = 5;
   //Time simTime = MilliSeconds (1100);
-  Time simTime = MilliSeconds (2000);
+  Time simTime = MilliSeconds (10000);
   double distance = 60.0;
   //Time interPacketInterval = MilliSeconds (100);
   Time interPacketInterval = MilliSeconds (8);
@@ -200,6 +200,9 @@ main (int argc, char *argv[])
           clientApps.Add (client.Install (ueNodes.Get ((u + 1) % numNodePairs)));
         }
     }
+
+    initEnbDevices(enbLteDevs);
+    initUeDevices(ueLteDevs);
 
   //serverApps.Start (MilliSeconds (500));
   //clientApps.Start (MilliSeconds (500));

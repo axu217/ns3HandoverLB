@@ -23,6 +23,7 @@
 #include <ns3/log.h>
 #include <ns3/double.h>
 #include <ns3/lte-common.h>
+#include <ns3/enb-load.h>
 #include <list>
 
 namespace ns3 {
@@ -117,7 +118,6 @@ A3RsrpHandoverAlgorithm::DoDispose ()
   NS_LOG_FUNCTION (this);
   delete m_handoverManagementSapProvider;
 }
-
 
 void
 A3RsrpHandoverAlgorithm::DoReportUeMeas (uint16_t rnti,

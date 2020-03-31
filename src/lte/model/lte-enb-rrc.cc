@@ -1577,8 +1577,8 @@ LteEnbRrc::DoDispose ()
 void 
 LteEnbRrc::getUeMap (void* mapPointer) 
 {
-  std::map<uint16_t, Ptr<UeManager>> *temp = (std::map<uint16_t, Ptr<UeManager>> *) mapPointer;
-  *temp = m_ueMap;
+  std::map<uint16_t, Ptr<UeManager>> **temp = (std::map<uint16_t, Ptr<UeManager>> **) mapPointer;
+  *temp = &m_ueMap;
 }
 
 TypeId

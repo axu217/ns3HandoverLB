@@ -76,7 +76,7 @@ class UeManager : public Object
 
 public:
 
-
+  LteRrcSap::MeasurementReport savedMessage;
   /**
    * The state of the UeManager at the eNB RRC
    * 

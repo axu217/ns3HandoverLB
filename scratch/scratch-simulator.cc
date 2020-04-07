@@ -202,7 +202,7 @@ main (int argc, char *argv[])
     }
 
     initEnbDevices(enbLteDevs);
-    initUeDevices(ueLteDevs);
+    //initUeDevices(ueLteDevs);
 
   //serverApps.Start (MilliSeconds (500));
   //clientApps.Start (MilliSeconds (500));

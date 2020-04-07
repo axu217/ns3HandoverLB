@@ -23,23 +23,23 @@
 using namespace ns3;
 
 std::map<uint16_t, float> loadMap;
-std::map<uint16_t, Ptr<LteUeNetDevice>> ueNetDeviceMap;
+//std::map<uint16_t, Ptr<LteUeNetDevice>> ueNetDeviceMap;
 
 NetDeviceContainer enbLteDevs;
 
-void initUeDevices(NetDeviceContainer newDevs) {
+// void initUeDevices(NetDeviceContainer newDevs) {
 
-    uint32_t nDevices = newDevs.GetN();
-    for (uint16_t i = 0; i < nDevices; i++) {
+//     uint32_t nDevices = newDevs.GetN();
+//     for (uint16_t i = 0; i < nDevices; i++) {
 
-        Ptr<NetDevice> tempNetDevice = newDevs.Get(i);
-        Ptr<LteUeNetDevice> ueNetDevice = tempNetDevice->GetObject<LteUeNetDevice>();
-        uint16_t rnti = ueNetDevice->GetRrc()->GetRnti();
+//         Ptr<NetDevice> tempNetDevice = newDevs.Get(i);
+//         Ptr<LteUeNetDevice> ueNetDevice = tempNetDevice->GetObject<LteUeNetDevice>();
+//         uint16_t rnti = ueNetDevice->GetRrc()->GetRnti();
 
-        NS_LOG_UNCOND("Inserting " << rnti << " to ueMap");
-        ueNetDeviceMap.insert(std::pair<uint16_t, Ptr<LteUeNetDevice>>(rnti, ueNetDevice));
-    }
-}
+//         NS_LOG_UNCOND("Inserting " << rnti << " to ueMap");
+//         ueNetDeviceMap.insert(std::pair<uint16_t, Ptr<LteUeNetDevice>>(rnti, ueNetDevice));
+//     }
+// }
 
 void initEnbDevices(NetDeviceContainer newDevs) {
     enbLteDevs = newDevs;
@@ -89,8 +89,16 @@ void loadBalancingAlgorithm() {
         rrc->getUeMap(&ueManagerMap);
 
         NS_LOG_UNCOND("Load balancing Iteration 2");
+
+        
+
+        
+
         for (std::map<uint16_t, Ptr<UeManager>>::iterator it = ueManagerMap->begin(); it != ueManagerMap->end();
              ++it) {
+
+            
+
             // UE Cell Id
             NS_LOG_UNCOND("Load balancing Iteration 3");
             uint16_t cellId = rrc->ComponentCarrierToCellId(it->second->GetComponentCarrierId());
@@ -99,33 +107,26 @@ void loadBalancingAlgorithm() {
             PointerValue ptr;
             Ptr<UeManager> tempUeManager = it->second;
 
-            uint16_t rnti = tempUeManager->GetRnti();
 
-            std::map<uint16_t, Ptr<LteUeNetDevice>>::iterator ueNetDeviceIt = ueNetDeviceMap.find(rnti);
+            LteRrcSap::MeasurementReport savedMessage = tempUeManager->savedMessage;
 
-            if (ueNetDeviceIt == ueNetDeviceMap.end()) {
-                NS_LOG_UNCOND("Did not find this UE " << rnti);
-                continue;
-            }
-
-            Ptr<LteUeRrc> ueRrc = ueNetDeviceIt->second->GetRrc();
-
-            NS_LOG_UNCOND("Load balancing Iteration 4");
-            std::map<uint16_t, LteUeRrc::MeasValues>::iterator cellIt;
-            for (cellIt = ueRrc->m_storedMeasValues.begin(); cellIt != ueRrc->m_storedMeasValues.end();
-                 cellIt++) {
-  
-
-                NS_LOG_UNCOND("Load balancing Iteration 5");
-                uint16_t possibleCellId = cellIt->first;
+            NS_LOG_UNCOND("Load balance it 4");
+            for (std::list <LteRrcSap::MeasResultEutra>::iterator it = savedMessage.measResults.measResultListEutra.begin (); it != savedMessage.measResults.measResultListEutra.end (); ++it)
+            {
+                uint16_t possibleCellId = it->physCellId;
                 if (cellId == possibleCellId) {
                     continue;
                 }
 
                 float loadGap = getLoad(possibleCellId) - cellLoad;
                 NS_LOG_UNCOND("Load Gap " << loadGap << " between cell:" << cellId << " and cell: " << possibleCellId);
+                NS_LOG_UNCOND ("neighbour cellId " << it->physCellId
+                                                << " RSRP " << (it->haveRsrpResult ? (uint16_t) it->rsrpResult : 255)
+                                                << " RSRQ " << (it->haveRsrqResult ? (uint16_t) it->rsrqResult : 255));
             }
         }
 
     }
 }
+
+// TODO NOW. Broken. Can't get UERRC from UEMANAGER

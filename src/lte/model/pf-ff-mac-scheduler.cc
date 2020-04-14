@@ -1707,9 +1707,9 @@ PfFfMacScheduler::DoSchedUlTriggerReq (const struct FfMacSchedSapProvider::Sched
           (*itStat).second.at (harqId) = 0;
         }
       uint16_t carrierId = m_schedSapUser->getCellId();
-      updateLoad(carrierId, rbAllocated, uldci.m_rbLen);
+      updateLoad(carrierId, rbAllocated, m_cschedCellConfig.m_ulBandwidth);
       
-      //NS_LOG_UNCOND (this << " UE Allocation RNTI " << (*it).first << " startPRB " << (uint32_t)uldci.m_rbStart << " nPRB " << (uint32_t)uldci.m_rbLen << " CQI " << cqi << " MCS " << (uint32_t)uldci.m_mcs << " TBsize " << uldci.m_tbSize << " RbAlloc " << rbAllocated << " harqId " << (uint16_t)harqId);
+      // NS_LOG_UNCOND (this << " UE Allocation RNTI " << (*it).first << " startPRB " << (uint32_t)uldci.m_rbStart << " nPRB " << (uint32_t)uldci.m_rbLen << " CQI " << cqi << " MCS " << (uint32_t)uldci.m_mcs << " TBsize " << uldci.m_tbSize << " RbAlloc " << rbAllocated << " harqId " << (uint16_t)harqId);
     
 
 

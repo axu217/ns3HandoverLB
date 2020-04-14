@@ -531,6 +531,7 @@ LteHelper::InstallSingleEnbDevice (Ptr<Node> n)
       cc->SetAsPrimary (it->second.IsPrimary ());
       NS_ABORT_MSG_IF (m_cellIdCounter == 65535, "max num cells exceeded");
       cc->SetCellId (m_cellIdCounter++);
+      NS_LOG_UNCOND("Setting cell id " << (m_cellIdCounter - 1));
       ccMap [it->first] =  cc;
     }
   // CC map is not needed anymore
@@ -578,7 +579,9 @@ LteHelper::InstallSingleEnbDevice (Ptr<Node> n)
       ulPhy->SetAntenna (antenna);
 
       Ptr<LteEnbMac> mac = CreateObject<LteEnbMac> ();
-      mac->SetCellId(it->second->GetCellId());
+      uint16_t tempId = it->second->GetCellId();
+      mac->SetCellId(tempId);
+      NS_LOG_UNCOND("Setting Cell it to " << tempId);
       Ptr<FfMacScheduler> sched = m_schedulerFactory.Create<FfMacScheduler> ();
       Ptr<LteFfrAlgorithm> ffrAlgorithm = m_ffrAlgorithmFactory.Create<LteFfrAlgorithm> ();
       it->second->SetMac (mac);

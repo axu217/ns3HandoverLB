@@ -1048,12 +1048,12 @@ UeManager::RecvMeasurementReport (LteRrcSap::MeasurementReport msg)
                                   << " RSRP " << (uint16_t) msg.measResults.rsrpResult
                                   << " RSRQ " << (uint16_t) msg.measResults.rsrqResult);
   savedMessage = msg;
-  NS_LOG_UNCOND("REcv measurement report called");
+  NS_LOG_UNCOND("Received measurement report called here");
   for (std::list <LteRrcSap::MeasResultEutra>::iterator it = msg.measResults.measResultListEutra.begin ();
        it != msg.measResults.measResultListEutra.end ();
        ++it)
     {
-      NS_LOG_UNCOND ("neighbour cellId " << it->physCellId
+      NS_LOG_LOGIC ("neighbour cellId " << it->physCellId
                                         << " RSRP " << (it->haveRsrpResult ? (uint16_t) it->rsrpResult : 255)
                                         << " RSRQ " << (it->haveRsrqResult ? (uint16_t) it->rsrqResult : 255));
     }

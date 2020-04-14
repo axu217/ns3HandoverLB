@@ -30,7 +30,7 @@ using namespace ns3;
 //void initUeDevices(NetDeviceContainer newDevs);
 void initEnbDevices(NetDeviceContainer newDevs);
 
-void updateLoad(uint16_t cellId, int rbAllocated, uint8_t totalRb);
+void updateLoad(uint16_t cellId, int rbAllocated, uint16_t totalRb);
 
 float getLoad(uint16_t cellId);
 

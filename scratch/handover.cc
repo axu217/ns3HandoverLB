@@ -139,8 +139,8 @@ main (int argc, char *argv[])
   // LogComponentEnable ("A2A4RsrqHandoverAlgorithm", logLevel);
   // LogComponentEnable ("A3RsrpHandoverAlgorithm", logLevel);
 
-  uint16_t numberOfUes = 4;
-  uint16_t numberOfEnbs = 3;
+  uint16_t numberOfUes = 3;
+  uint16_t numberOfEnbs = 2;
   uint16_t numBearersPerUe = 2;
   double distance = 500.0; // m
   double yForUe = 500.0;   // m
@@ -239,6 +239,13 @@ main (int argc, char *argv[])
   enbMobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   enbMobility.SetPositionAllocator (enbPositionAlloc);
   enbMobility.Install (enbNodes);
+
+  Ptr<ListPositionAllocator> enbPositionAlloc = CreateObject<ListPositionAllocator> ();
+  for (uint16_t i = 0; i < numberOfEnbs; i++)
+    {
+      Vector enbPosition (distance * (i + 1), distance, 0);
+      enbPositionAlloc->Add (enbPosition);
+    }
 
   // Install Mobility Model in UE
   MobilityHelper ueMobility;

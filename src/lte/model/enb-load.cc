@@ -60,7 +60,7 @@ void updateLoad(uint16_t cellId, int rbAllocated, uint16_t totalRb) {
         
     }
     
-    NS_LOG_UNCOND("Updating load " << std::to_string(load) << " id " << cellId << " ||| " << rbAllocated << " kk " << totalRb);
+    NS_LOG_UNCOND("Updating load to [" << std::to_string(load) << "] id " << cellId << " ||| " << rbAllocated << " kk " << totalRb);
 }
 
 float getLoad(uint16_t cellId) {
@@ -92,7 +92,7 @@ void loadBalancingAlgorithm() {
         //NS_LOG_UNCOND("Load balancing Iteration 2");
 
         
-
+    
         
 
         for (std::map<uint16_t, Ptr<UeManager>>::iterator it = ueManagerMap->begin(); it != ueManagerMap->end();
@@ -105,7 +105,7 @@ void loadBalancingAlgorithm() {
             uint16_t cellId = rrc->ComponentCarrierToCellId(it->second->GetComponentCarrierId());
             float cellLoad = getLoad(cellId);
 
-            NS_LOG_UNCOND("Cell ID:" << cellId <<  " load is " << std::to_string(cellLoad));
+            NS_LOG_UNCOND("Cell ID: " << cellId <<  " load is " << std::to_string(cellLoad));
 
             PointerValue ptr;
             Ptr<UeManager> tempUeManager = it->second;
@@ -113,8 +113,7 @@ void loadBalancingAlgorithm() {
 
             LteRrcSap::MeasurementReport savedMessage = tempUeManager->savedMessage;
 
-            // Todo: savedMessage is nil
-
+            
             //NS_LOG_UNCOND("Load balance Iteration 4");
             for (std::list <LteRrcSap::MeasResultEutra>::iterator it = savedMessage.measResults.measResultListEutra.begin (); it != savedMessage.measResults.measResultListEutra.end (); ++it)
             {
@@ -130,9 +129,9 @@ void loadBalancingAlgorithm() {
 
                 float loadGap = curLoad - cellLoad;
                 NS_LOG_UNCOND("Load Gap: [" << loadGap << "] between cell: [" << cellId << "] and cell: " << possibleCellId);
-                NS_LOG_UNCOND ("neighbour cellId " << it->physCellId
-                                                << " RSRP " << (it->haveRsrpResult ? (uint16_t) it->rsrpResult : 255)
-                                                << " RSRQ " << (it->haveRsrqResult ? (uint16_t) it->rsrqResult : 255));
+                // NS_LOG_UNCOND ("neighbour cellId " << it->physCellId
+                //                                 << " RSRP " << (it->haveRsrpResult ? (uint16_t) it->rsrpResult : 255)
+                //                                 << " RSRQ " << (it->haveRsrqResult ? (uint16_t) it->rsrqResult : 255));
 
                 
             }

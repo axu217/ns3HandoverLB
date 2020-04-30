@@ -73,6 +73,36 @@ float getLoad(uint16_t cellId) {
     return 0;
 }
 
+float * calculateNewOffsets(uint16_t cellId, uint16_t neighborCellId) {
+    static float newOffsets[2]; //CIO 21, CIO 12
+    float offset; //cio12
+    float minOffset = getMinOffset(cellId, neighborCellId) 
+    float load = getLoad(cellId); 
+    float neighborLoad = getLoad(neighborCellId); 
+    // Updating cell offsets
+    float delta = (offset-minOffset)*(1-neighborLoad/load);
+    newOffsets[0] = offset - delta;
+
+    float hysteresis;
+    float neighborHysteresis;
+    newOffsets[1] = hysteresis + neighborHysteresis - newOffsets[0];
+
+    return newOffsets;
+}
+
+float getOffset(uint16_t cellId, uint16_t neighborCellId) {
+    // get cell offsets
+    return 0.0;
+}
+
+float getMinOffset(uint16_t cellId, uint16_t neighborCellId) {
+    // get cell offsets
+    float m_th; //-107
+    float neighborHysteresis;
+    float m_1max; //~-111
+    return 0.0;
+}
+
 void loadBalancingAlgorithm() {
     NS_LOG_UNCOND("Load balancing Iteration Begin");
 
@@ -89,11 +119,7 @@ void loadBalancingAlgorithm() {
         std::map<uint16_t, Ptr<UeManager>> *ueManagerMap;
         rrc->getUeMap(&ueManagerMap);
 
-        //NS_LOG_UNCOND("Load balancing Iteration 2");
-
-        
-    
-        
+        //NS_LOG_UNCOND("Load balancing Iteration 2");        
 
         for (std::map<uint16_t, Ptr<UeManager>>::iterator it = ueManagerMap->begin(); it != ueManagerMap->end();
              ++it) {
@@ -140,4 +166,3 @@ void loadBalancingAlgorithm() {
     }
     NS_LOG_UNCOND("Load balancing Iteration End");
 }
-

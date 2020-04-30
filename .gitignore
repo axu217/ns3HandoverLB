@@ -16,3 +16,4 @@ __pycache__/
 waf-tools/__pycache__/
 .clang-format
 .vscode/
+*.pyc

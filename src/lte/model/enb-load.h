@@ -33,6 +33,7 @@ void initEnbDevices(NetDeviceContainer newDevs);
 void updateLoad(uint16_t cellId, int rbAllocated, uint16_t totalRb);
 
 float getLoad(uint16_t cellId);
+double getCio(uint16_t source, uint16_t target);
 
 void loadBalancingAlgorithm();
 

@@ -2004,11 +2004,14 @@ LteUeRrc::MeasurementReportTriggering (uint8_t measId)
               && (measReportIt->second.cellsTriggeredList.find (cellId)
                   != measReportIt->second.cellsTriggeredList.end ());
 
-            ocn = getLoad(cellId);
-            ocp = getLoad(m_cellId);
+            // ocn = getLoad(cellId);
+            // ocp = getLoad(m_cellId);
+            double cio = getCio(m_cellId, cellId);
+
+            // NS_LOG_UNCOND("Mn(neighbor): " << mn << " | Mp(serving): " << mp);
 
             // Inequality A3-1 (Entering condition): Mn + Ofn + Ocn - Hys > Mp + Ofp + Ocp + Off
-            bool entryCond = mn + ofn + ocn - hys > mp + ofp + ocp + off;
+            bool entryCond = mn + ofn + ocn - hys > mp + ofp + ocp + off - cio;
 
             if (entryCond)
               {

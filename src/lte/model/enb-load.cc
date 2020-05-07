@@ -24,23 +24,13 @@
 using namespace ns3;
 
 std::map<uint16_t, float> loadMap;
-//std::map<uint16_t, Ptr<LteUeNetDevice>> ueNetDeviceMap;
+
+typedef std::map<uint16_t, double> innerMap;
+std::map<uint16_t, innerMap> cioMap;
+
 
 NetDeviceContainer enbLteDevs;
 
-// void initUeDevices(NetDeviceContainer newDevs) {
-
-//     uint32_t nDevices = newDevs.GetN();
-//     for (uint16_t i = 0; i < nDevices; i++) {
-
-//         Ptr<NetDevice> tempNetDevice = newDevs.Get(i);
-//         Ptr<LteUeNetDevice> ueNetDevice = tempNetDevice->GetObject<LteUeNetDevice>();
-//         uint16_t rnti = ueNetDevice->GetRrc()->GetRnti();
-
-//         NS_LOG_UNCOND("Inserting " << rnti << " to ueMap");
-//         ueNetDeviceMap.insert(std::pair<uint16_t, Ptr<LteUeNetDevice>>(rnti, ueNetDevice));
-//     }
-// }
 
 void initEnbDevices(NetDeviceContainer newDevs) {
     enbLteDevs = newDevs;
@@ -52,15 +42,17 @@ void updateLoad(uint16_t cellId, int rbAllocated, uint16_t totalRb) {
     float load = ((float) rbAllocated) / (float) totalRb;
 
     loadMap.insert(std::pair<uint16_t, float>(cellId, load));
-    if (counter > 10) {
-        loadBalancingAlgorithm();
+    if (counter > 50) {
+        // loadBalancingAlgorithm();
+        
         counter = 0;
     } else {
         counter++;
         
     }
+    NS_LOG_UNCOND("Updating load: " << cellId << "-[" << std::to_string(load) << "] id " << " ||| " << rbAllocated << " kk " << totalRb);
     
-    NS_LOG_UNCOND("Updating load to [" << std::to_string(load) << "] id " << cellId << " ||| " << rbAllocated << " kk " << totalRb);
+    
 }
 
 float getLoad(uint16_t cellId) {
@@ -73,10 +65,42 @@ float getLoad(uint16_t cellId) {
     return 0;
 }
 
+void setCio(uint16_t source, uint16_t target, double newCioValue) {
+    if (cioMap.find(source) == cioMap.end()){
+        return;
+    }
+
+    innerMap tempInnerMap = cioMap[source];
+
+    if (tempInnerMap.find(target) == tempInnerMap.end()) {
+        return;
+    }
+
+    tempInnerMap[target] = newCioValue;
+}
+
+double getCio(uint16_t source, uint16_t target) {
+    
+    if (cioMap.find(source) == cioMap.end()){
+        return 0;
+    }
+
+    innerMap tempInnerMap = cioMap[source];
+
+    if (tempInnerMap.find(target) == tempInnerMap.end()) {
+        return 0;
+    }
+
+    return tempInnerMap[target];
+}
+
 void loadBalancingAlgorithm() {
     NS_LOG_UNCOND("Load balancing Iteration Begin");
 
     uint32_t nDevices = enbLteDevs.GetN();
+
+
+    // For each eNodeB
     for (uint16_t i = 0; i < nDevices; i++) {
 
         //NS_LOG_UNCOND("Load balancing Iteration 1");
@@ -91,17 +115,16 @@ void loadBalancingAlgorithm() {
 
         //NS_LOG_UNCOND("Load balancing Iteration 2");
 
-        
+       
     
         
-
+        // For each UE that belongs to outer loop's eNodeb
         for (std::map<uint16_t, Ptr<UeManager>>::iterator it = ueManagerMap->begin(); it != ueManagerMap->end();
              ++it) {
 
             
 
             // UE Cell Id
-            //NS_LOG_UNCOND("Load balancing Iteration 3");
             uint16_t cellId = rrc->ComponentCarrierToCellId(it->second->GetComponentCarrierId());
             float cellLoad = getLoad(cellId);
 
@@ -114,7 +137,7 @@ void loadBalancingAlgorithm() {
             LteRrcSap::MeasurementReport savedMessage = tempUeManager->savedMessage;
 
             
-            //NS_LOG_UNCOND("Load balance Iteration 4");
+            // For each neighboring cell that middle loop UE may want to switch to
             for (std::list <LteRrcSap::MeasResultEutra>::iterator it = savedMessage.measResults.measResultListEutra.begin (); it != savedMessage.measResults.measResultListEutra.end (); ++it)
             {
                 // NS_LOG_UNCOND("Measurement report looping");
@@ -123,12 +146,23 @@ void loadBalancingAlgorithm() {
                     continue;
                 }
 
-                float curLoad = getLoad(possibleCellId);
-                NS_LOG_UNCOND("Cell ID:" << possibleCellId <<  " load is " << std::to_string(curLoad));
-                
+        
 
-                float loadGap = curLoad - cellLoad;
-                NS_LOG_UNCOND("Load Gap: [" << loadGap << "] between cell: [" << cellId << "] and cell: " << possibleCellId);
+                float potentialTargetLoad = getLoad(possibleCellId);
+                NS_LOG_UNCOND("Cell ID:" << possibleCellId <<  " load is " << std::to_string(potentialTargetLoad));
+
+                // double sourceTargetCio = getCio(cellId, possibleCellId);
+
+
+
+                double m1Max = -107.0;
+
+                double loadFactor = 1 - (potentialTargetLoad / cellLoad);
+
+
+
+                // float loadGap = potentialTargetLoad - cellLoad;
+                // NS_LOG_UNCOND("Load Gap: [" << loadGap << "] between cell: [" << cellId << "] and cell: " << possibleCellId);
                 // NS_LOG_UNCOND ("neighbour cellId " << it->physCellId
                 //                                 << " RSRP " << (it->haveRsrpResult ? (uint16_t) it->rsrpResult : 255)
                 //                                 << " RSRQ " << (it->haveRsrqResult ? (uint16_t) it->rsrqResult : 255));

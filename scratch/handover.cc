@@ -31,6 +31,8 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("LenaX2HandoverMeasures");
 
+Ptr<Node> movingNode;
+
 void
 NotifyConnectionEstablishedUe (std::string context,
                                uint64_t imsi,
@@ -98,6 +100,9 @@ NotifyHandoverStartEnb (std::string context,
             << " RNTI " << rnti
             << " to CellId " << targetCellId
             << std::endl;
+
+  Vector res = movingNode->GetObject<MobilityModel> ()->GetPosition();
+  std::cout << context << "Position at handover was: " << res << std::endl;
 }
 
 void
@@ -143,15 +148,15 @@ main (int argc, char *argv[])
   uint16_t numberOfEnbs = 2;
   uint16_t numBearersPerUe = 2;
   double distance = 500.0; // m
-  double yForUe = 500.0;   // m
+  double yForUe = 20.0;   // m
   double speed = 20;       // m/s
-  double simTime = (double)(numberOfEnbs + 1) * distance / speed; // 1500 m / 20 m/s = 75 secs
+  double simTime = 10;
   double enbTxPowerDbm = 46.0;
 
   // change some default attributes so that they are reasonable for
   // this scenario, but do this before processing command line
   // arguments, so that the user is allowed to override these settings
-  Config::SetDefault ("ns3::UdpClient::Interval", TimeValue (MilliSeconds (10)));
+  Config::SetDefault ("ns3::UdpClient::Interval", TimeValue (Seconds (1.5)));
   Config::SetDefault ("ns3::UdpClient::MaxPackets", UintegerValue (1000000));
   Config::SetDefault ("ns3::LteHelper::UseIdealRrc", BooleanValue (true));
 
@@ -169,17 +174,11 @@ main (int argc, char *argv[])
   lteHelper->SetEpcHelper (epcHelper);
   lteHelper->SetSchedulerType ("ns3::PfFfMacScheduler");
 
-//   lteHelper->SetHandoverAlgorithmType ("ns3::A2A4RsrqHandoverAlgorithm");
-//   lteHelper->SetHandoverAlgorithmAttribute ("ServingCellThreshold",
-//                                             UintegerValue (30));
-//   lteHelper->SetHandoverAlgorithmAttribute ("NeighbourCellOffset",
-//                                             UintegerValue (1));
-
-   lteHelper->SetHandoverAlgorithmType ("ns3::A3RsrpHandoverAlgorithm");
-   lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis",
-                                             DoubleValue (3.0));
-   lteHelper->SetHandoverAlgorithmAttribute ("TimeToTrigger",
-                                             TimeValue (MilliSeconds (256)));
+  lteHelper->SetHandoverAlgorithmType ("ns3::A3RsrpHandoverAlgorithm");
+  lteHelper->SetHandoverAlgorithmAttribute ("Hysteresis",
+                                            DoubleValue (3.0));
+  lteHelper->SetHandoverAlgorithmAttribute ("TimeToTrigger",
+                                            TimeValue (MilliSeconds (256)));
 
   Ptr<Node> pgw = epcHelper->GetPgwNode ();
 
@@ -211,8 +210,8 @@ main (int argc, char *argv[])
   /*
    * Network topology:
    *
-   *      |     + --------------------------------------------------------->
-   *      |     UE
+   *      |                      UE +------------------------------------->
+   *      |     
    *      |
    *      |               d                   d                   d
    *    y |     |-------------------x-------------------x-------------------
@@ -240,19 +239,25 @@ main (int argc, char *argv[])
   enbMobility.SetPositionAllocator (enbPositionAlloc);
   enbMobility.Install (enbNodes);
 
-  Ptr<ListPositionAllocator> enbPositionAlloc = CreateObject<ListPositionAllocator> ();
-  for (uint16_t i = 0; i < numberOfEnbs; i++)
-    {
-      Vector enbPosition (distance * (i + 1), distance, 0);
-      enbPositionAlloc->Add (enbPosition);
-    }
+
+  Vector uePosition1 (distance, yForUe, 0);
+  Vector uePosition2 (distance * 2, yForUe, 0);
+  
 
   // Install Mobility Model in UE
   MobilityHelper ueMobility;
   ueMobility.SetMobilityModel ("ns3::ConstantVelocityMobilityModel");
   ueMobility.Install (ueNodes);
-  ueNodes.Get (0)->GetObject<MobilityModel> ()->SetPosition (Vector (0, yForUe, 0));
-  ueNodes.Get (0)->GetObject<ConstantVelocityMobilityModel> ()->SetVelocity (Vector (speed, 0, 0));
+
+  movingNode = ueNodes.Get(0);
+  ueNodes.Get (0)->GetObject<MobilityModel> ()->SetPosition (Vector (distance, yForUe, 0));
+
+  speed = 20;
+  // ueNodes.Get (0)->GetObject<ConstantVelocityMobilityModel> ()->SetVelocity (Vector (speed, 0, 0));
+
+  ueNodes.Get (1)->GetObject<MobilityModel> ()->SetPosition (uePosition1);
+  ueNodes.Get (2)->GetObject<MobilityModel> ()->SetPosition (uePosition2);
+
 
   // Install LTE Devices in eNB and UEs
   Config::SetDefault ("ns3::LteEnbPhy::TxPower", DoubleValue (enbTxPowerDbm));
@@ -265,10 +270,11 @@ main (int argc, char *argv[])
   ueIpIfaces = epcHelper->AssignUeIpv4Address (NetDeviceContainer (ueLteDevs));
 
   // Attach all UEs to the first eNodeB
-  for (uint16_t i = 0; i < numberOfUes; i++)
-    {
-      lteHelper->Attach (ueLteDevs.Get (i), enbLteDevs.Get (0));
-    }
+  
+  lteHelper->Attach (ueLteDevs.Get (0), enbLteDevs.Get (0));
+  lteHelper->Attach (ueLteDevs.Get (1), enbLteDevs.Get (0));
+  lteHelper->Attach (ueLteDevs.Get (2), enbLteDevs.Get (1));
+    
 
 
   NS_LOG_LOGIC ("setting up applications");
@@ -339,8 +345,6 @@ main (int argc, char *argv[])
   // X2-based Handover
   //lteHelper->HandoverRequest (Seconds (0.100), ueLteDevs.Get (0), enbLteDevs.Get (0), enbLteDevs.Get (1));
 
-  // Uncomment to enable PCAP tracing
-  // p2ph.EnablePcapAll("lena-x2-handover-measures");
 
   lteHelper->EnablePhyTraces ();
   lteHelper->EnableMacTraces ();

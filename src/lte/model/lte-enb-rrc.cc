@@ -1048,7 +1048,6 @@ UeManager::RecvMeasurementReport (LteRrcSap::MeasurementReport msg)
                                   << " RSRP " << (uint16_t) msg.measResults.rsrpResult
                                   << " RSRQ " << (uint16_t) msg.measResults.rsrqResult);
   savedMessage = msg;
-  NS_LOG_UNCOND("Received measurement report called here");
   for (std::list <LteRrcSap::MeasResultEutra>::iterator it = msg.measResults.measResultListEutra.begin ();
        it != msg.measResults.measResultListEutra.end ();
        ++it)

@@ -156,7 +156,7 @@ main (int argc, char *argv[])
   // change some default attributes so that they are reasonable for
   // this scenario, but do this before processing command line
   // arguments, so that the user is allowed to override these settings
-  Config::SetDefault ("ns3::UdpClient::Interval", TimeValue (Seconds (1.5)));
+  Config::SetDefault ("ns3::UdpClient::Interval", TimeValue (MilliSeconds (4)));
   Config::SetDefault ("ns3::UdpClient::MaxPackets", UintegerValue (1000000));
   Config::SetDefault ("ns3::LteHelper::UseIdealRrc", BooleanValue (true));
 
@@ -250,7 +250,7 @@ main (int argc, char *argv[])
   ueMobility.Install (ueNodes);
 
   movingNode = ueNodes.Get(0);
-  ueNodes.Get (0)->GetObject<MobilityModel> ()->SetPosition (Vector (distance, yForUe, 0));
+  ueNodes.Get (0)->GetObject<MobilityModel> ()->SetPosition (uePosition1);
 
   speed = 20;
   // ueNodes.Get (0)->GetObject<ConstantVelocityMobilityModel> ()->SetVelocity (Vector (speed, 0, 0));
@@ -334,6 +334,11 @@ main (int argc, char *argv[])
           Time startTime = Seconds (startTimeSeconds->GetValue ());
           serverApps.Start (startTime);
           clientApps.Start (startTime);
+
+        //   Time stopTime = Seconds (5.0);
+
+        //   serverApps.Stop (stopTime);
+        //   clientApps.Stop (stopTime);
 
         } // end for b
     }

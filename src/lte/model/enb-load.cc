@@ -38,20 +38,41 @@ void initEnbDevices(NetDeviceContainer newDevs) {
 
 uint8_t counter = 0;
 
-void updateLoad(uint16_t cellId, int rbAllocated, uint16_t totalRb) {
-    float load = ((float) rbAllocated) / (float) totalRb;
 
-    loadMap.insert(std::pair<uint16_t, float>(cellId, load));
+// Smoothing averaging. // 0.99 + 0.01
+void updateLoad(uint16_t cellId, int rbAllocated, uint16_t totalRb) {
+
+    float oldLoad = getLoad(cellId);
+    float newLoad = ((float) rbAllocated) / (float) totalRb;
+
+
+    if (oldLoad == -1) {
+        loadMap.insert({cellId, newLoad});
+        return;
+    }
+
+    
+    
+
+    if (rbAllocated == 0) {
+        float smoothedAverage = oldLoad * 0.99;
+        loadMap.insert(std::pair<uint16_t, float>(cellId, smoothedAverage));
+        return;
+    }
+   
+    float smoothedAverage = oldLoad * 0.90 + newLoad * 0.10;
+    loadMap.insert(std::pair<uint16_t, float>(cellId, smoothedAverage));
+    
+    
+
     if (counter > 50) {
         // loadBalancingAlgorithm();
-        
         counter = 0;
     } else {
         counter++;
         
     }
-    NS_LOG_UNCOND("Updating load: " << cellId << "-[" << std::to_string(load) << "] id " << " ||| " << rbAllocated << " kk " << totalRb);
-    
+    NS_LOG_UNCOND("Updating cell: [" << cellId << "] with load: [" << std::to_string(smoothedAverage) << "]");
     
 }
 
@@ -62,7 +83,7 @@ float getLoad(uint16_t cellId) {
     if (it != loadMap.end()) {
         return it->second;
     }
-    return 0;
+    return -1;
 }
 
 void setCio(uint16_t source, uint16_t target, double newCioValue) {
@@ -128,7 +149,7 @@ void loadBalancingAlgorithm() {
             uint16_t cellId = rrc->ComponentCarrierToCellId(it->second->GetComponentCarrierId());
             float cellLoad = getLoad(cellId);
 
-            NS_LOG_UNCOND("Cell ID: " << cellId <<  " load is " << std::to_string(cellLoad));
+            // NS_LOG_UNCOND("Cell ID: " << cellId <<  " load is " << std::to_string(cellLoad));
 
             PointerValue ptr;
             Ptr<UeManager> tempUeManager = it->second;
@@ -149,15 +170,22 @@ void loadBalancingAlgorithm() {
         
 
                 float potentialTargetLoad = getLoad(possibleCellId);
-                NS_LOG_UNCOND("Cell ID:" << possibleCellId <<  " load is " << std::to_string(potentialTargetLoad));
+                // NS_LOG_UNCOND("Cell ID:" << possibleCellId <<  " load is " << std::to_string(potentialTargetLoad));
 
-                // double sourceTargetCio = getCio(cellId, possibleCellId);
+                if (potentialTargetLoad >= cellLoad) {
+                    continue;
+                }
 
 
+                double oldCio = getCio(cellId, possibleCellId);
 
-                double m1Max = -107.0;
+                double cioMin = -107.0;
 
                 double loadFactor = 1 - (potentialTargetLoad / cellLoad);
+
+                double delta = (oldCio - cioMin) * loadFactor;
+
+                setCio(cellId, possibleCellId, oldCio - delta);
 
 
 
@@ -165,7 +193,10 @@ void loadBalancingAlgorithm() {
                 // NS_LOG_UNCOND("Load Gap: [" << loadGap << "] between cell: [" << cellId << "] and cell: " << possibleCellId);
                 // NS_LOG_UNCOND ("neighbour cellId " << it->physCellId
                 //                                 << " RSRP " << (it->haveRsrpResult ? (uint16_t) it->rsrpResult : 255)
-                //                                 << " RSRQ " << (it->haveRsrqResult ? (uint16_t) it->rsrqResult : 255));
+                //   
+                
+                NS_LOG_UNCOND("Changing CIO for cell: [" <<  cellId << "] - cell: [" << possibleCellId << ". Old CIO: [" << oldCio
+                                            << "]    New CIO: [" << (oldCio - delta) << "]");
 
                 
             }

@@ -1478,14 +1478,18 @@ PfFfMacScheduler::DoSchedUlTriggerReq (const struct FfMacSchedSapProvider::Sched
         }
     }
 
+
   if (nflows == 0)
     {
       if (ret.m_dciList.size () > 0)
         {
           m_allocationMaps.insert (std::pair <uint16_t, std::vector <uint16_t> > (params.m_sfnSf, rbgAllocationMap));
           m_schedSapUser->SchedUlConfigInd (ret);
+          uint16_t carrierId = m_schedSapUser->getCellId();
+      updateLoad(carrierId, 0, m_cschedCellConfig.m_ulBandwidth);
         }
-
+      
+      
       return;  // no flows to be scheduled
     }
 
@@ -1521,6 +1525,7 @@ PfFfMacScheduler::DoSchedUlTriggerReq (const struct FfMacSchedSapProvider::Sched
       it = m_ceBsrRxed.begin ();
       m_nextRntiUl = (*it).first;
     }
+
   do
     {
       std::set <uint16_t>::iterator itRnti = rntiAllocated.find ((*it).first);
@@ -1706,8 +1711,7 @@ PfFfMacScheduler::DoSchedUlTriggerReq (const struct FfMacSchedSapProvider::Sched
             }
           (*itStat).second.at (harqId) = 0;
         }
-      uint16_t carrierId = m_schedSapUser->getCellId();
-      updateLoad(carrierId, rbAllocated, m_cschedCellConfig.m_ulBandwidth);
+      
       
       // NS_LOG_UNCOND (this << " UE Allocation RNTI " << (*it).first << " startPRB " << (uint32_t)uldci.m_rbStart << " nPRB " << (uint32_t)uldci.m_rbLen << " CQI " << cqi << " MCS " << (uint32_t)uldci.m_mcs << " TBsize " << uldci.m_tbSize << " RbAlloc " << rbAllocated << " harqId " << (uint16_t)harqId);
     
@@ -1740,6 +1744,8 @@ PfFfMacScheduler::DoSchedUlTriggerReq (const struct FfMacSchedSapProvider::Sched
     }
   while (((*it).first != m_nextRntiUl)&&(rbPerFlow!=0));
 
+  uint16_t carrierId = m_schedSapUser->getCellId();
+  updateLoad(carrierId, rbAllocated, m_cschedCellConfig.m_ulBandwidth);
 
   // Update global UE stats
   // update UEs stats

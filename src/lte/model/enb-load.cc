@@ -50,19 +50,9 @@ void updateLoad(uint16_t cellId, int rbAllocated, uint16_t totalRb) {
         loadMap.insert({cellId, newLoad});
         return;
     }
-
-    
-    
-
-    if (rbAllocated == 0) {
-        float smoothedAverage = oldLoad * 0.99;
-        loadMap.insert(std::pair<uint16_t, float>(cellId, smoothedAverage));
-        return;
-    }
    
     float smoothedAverage = oldLoad * 0.90 + newLoad * 0.10;
-    loadMap.insert(std::pair<uint16_t, float>(cellId, smoothedAverage));
-    
+    loadMap[cellId] = smoothedAverage;
     
 
     if (counter > 50) {
@@ -72,7 +62,13 @@ void updateLoad(uint16_t cellId, int rbAllocated, uint16_t totalRb) {
         counter++;
         
     }
-    NS_LOG_UNCOND("Updating cell: [" << cellId << "] with load: [" << std::to_string(smoothedAverage) << "]");
+    NS_LOG_UNCOND("Updating cell: [" << cellId << "] with load: [" << std::to_string(smoothedAverage) << "]. Old load " << oldLoad << " New Load " << newLoad);
+    
+    // for(auto elem : loadMap)
+    // {
+    //     NS_LOG_UNCOND(elem.first << " " << elem.second << "\n");
+    // }
+    // NS_LOG_UNCOND("\n");
     
 }
 

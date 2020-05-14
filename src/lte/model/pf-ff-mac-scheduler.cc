@@ -1485,11 +1485,11 @@ PfFfMacScheduler::DoSchedUlTriggerReq (const struct FfMacSchedSapProvider::Sched
         {
           m_allocationMaps.insert (std::pair <uint16_t, std::vector <uint16_t> > (params.m_sfnSf, rbgAllocationMap));
           m_schedSapUser->SchedUlConfigInd (ret);
-          uint16_t carrierId = m_schedSapUser->getCellId();
-      updateLoad(carrierId, 0, m_cschedCellConfig.m_ulBandwidth);
         }
-      
-      
+
+      uint16_t carrierId = m_schedSapUser->getCellId();
+      updateLoad(carrierId, 0, m_cschedCellConfig.m_ulBandwidth);
+
       return;  // no flows to be scheduled
     }
 
@@ -1604,6 +1604,7 @@ PfFfMacScheduler::DoSchedUlTriggerReq (const struct FfMacSchedSapProvider::Sched
                 }
             }
         }
+
       if (!allocated)
         {
           // unable to allocate new resource: finish scheduling

@@ -150,13 +150,13 @@ main (int argc, char *argv[])
   double distance = 500.0; // m
   double yForUe = 20.0;   // m
   double speed = 20;       // m/s
-  double simTime = 10;
+  double simTime = 3;
   double enbTxPowerDbm = 46.0;
 
   // change some default attributes so that they are reasonable for
   // this scenario, but do this before processing command line
   // arguments, so that the user is allowed to override these settings
-  Config::SetDefault ("ns3::UdpClient::Interval", TimeValue (MilliSeconds (4)));
+  Config::SetDefault ("ns3::UdpClient::Interval", TimeValue (MilliSeconds (500)));
   Config::SetDefault ("ns3::UdpClient::MaxPackets", UintegerValue (1000000));
   Config::SetDefault ("ns3::LteHelper::UseIdealRrc", BooleanValue (true));
 
@@ -335,7 +335,7 @@ main (int argc, char *argv[])
           serverApps.Start (startTime);
           clientApps.Start (startTime);
 
-        //   Time stopTime = Seconds (5.0);
+        //   Time stopTime = Seconds (2.0);
 
         //   serverApps.Stop (stopTime);
         //   clientApps.Stop (stopTime);
